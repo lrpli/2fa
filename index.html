@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>私人 2FA 验证工具</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-card: #1a1d27;
+    --bg-card-hover: #1f2235;
+    --border: #2a2d3e;
+    --accent: #6c63ff;
+    --accent-hover: #574fd6;
+    --accent-light: rgba(108, 99, 255, 0.12);
+    --text: #e8eaf6;
+    --text-muted: #7c7f9a;
+    --text-dim: #4a4d6a;
+    --danger: #ff5c6c;
+    --danger-light: rgba(255, 92, 108, 0.12);
+    --success: #4caf88;
+    --warn: #ffb74d;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, #1a1d27 0%, #13151f 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo {
+    width: 38px;
+    height: 38px;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+
+  h1 span {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-left: 8px;
+  }
+
+  /* Main */
+  main {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 28px 16px 0;
+  }
+
+  /* Search + Add bar */
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .search-wrap {
+    flex: 1;
+    position: relative;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-dim);
+    pointer-events: none;
+  }
+
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 14px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus, input[type="password"]:focus {
+    border-color: var(--accent);
+  }
+
+  #searchInput {
+    padding-left: 38px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: var(--accent-hover); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover {
+    background: var(--bg-card);
+    color: var(--text);
+    border-color: var(--accent);
+  }
+
+  .btn-danger {
+    background: var(--danger-light);
+    color: var(--danger);
+    border: 1px solid transparent;
+  }
+
+  .btn-danger:hover {
+    background: var(--danger);
+    color: #fff;
+  }
+
+  /* Cards */
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.2s;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+
+  .card-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    flex-shrink: 0;
+    color: #fff;
+    letter-spacing: 0.5px;
+  }
+
+  .card-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .card-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-issuer {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .card-code-area {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .code-display {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.3s;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .code-display:hover { color: var(--accent); }
+  .code-display.expiring { color: var(--warn); }
+  .code-display.copied { color: var(--success); }
+
+  .code-display .code-sep {
+    color: var(--text-dim);
+    font-weight: 400;
+    letter-spacing: 0;
+    margin: 0 2px;
+  }
+
+  .progress-wrap {
+    width: 80px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: width 1s linear, background 0.5s;
+  }
+
+  .progress-bar.expiring { background: var(--warn); }
+
+  .card-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .icon-btn:hover { color: var(--text); border-color: var(--accent); background: var(--accent-light); }
+  .icon-btn.del:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-light); }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    animation: fadeIn 0.4s ease;
+  }
+
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  .empty h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+
+  .empty p { font-size: 14px; line-height: 1.6; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+    animation: overlayIn 0.2s ease;
+  }
+
+  @keyframes overlayIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 440px;
+    box-shadow: var(--shadow);
+    animation: modalIn 0.25s ease;
+    overflow: hidden;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-title {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .modal-close {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    line-height: 1;
+    transition: all 0.2s;
+  }
+
+  .modal-close:hover { background: var(--border); color: var(--text); }
+
+  .modal-body {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .form-group .hint {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  .secret-wrap {
+    position: relative;
+  }
+
+  .secret-wrap input { padding-right: 40px; font-family: 'Courier New', monospace; }
+
+  .secret-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    transition: color 0.2s;
+  }
+
+  .secret-toggle:hover { color: var(--text-muted); }
+
+  .modal-footer {
+    padding: 0 24px 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  .error-msg {
+    background: var(--danger-light);
+    color: var(--danger);
+    border: 1px solid rgba(255,92,108,0.3);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 13px;
+    display: none;
+  }
+
+  /* Confirm dialog */
+  .confirm-modal .modal-body {
+    gap: 8px;
+  }
+
+  .confirm-modal .confirm-msg {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .confirm-modal .confirm-name {
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    background: #2a2d3e;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 2000;
+    box-shadow: var(--shadow);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    white-space: nowrap;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-4px);
+  }
+
+  /* Import area */
+  .qr-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent-light);
+    border: 1px solid rgba(108,99,255,0.25);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 480px) {
+    .card-code-area { display: none; }
+    .code-display-mobile { display: flex !important; }
+    h1 span { display: none; }
+  }
+
+  .code-display-mobile {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    width: 100%;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">🔐</div>
+    <h1>2FA 验证工具 <span>本地私人存储</span></h1>
+  </div>
+</header>
+
+<main>
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="searchInput" placeholder="搜索账户…">
+    </div>
+    <button class="btn btn-primary" onclick="openAddModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      添加账户
+    </button>
+  </div>
+
+  <div class="cards" id="cardList"></div>
+  <div class="empty" id="emptyState" style="display:none">
+    <div class="empty-icon">🔑</div>
+    <h2>暂无 2FA 账户</h2>
+    <p>点击"添加账户"导入你的 TOTP 密钥<br>所有数据仅保存在本地浏览器中</p>
+  </div>
+</main>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="editModal" style="display:none" onclick="onOverlayClick(event,'editModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">添加账户</span>
+      <button class="modal-close" onclick="closeModal('editModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="qr-hint">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        密钥通常在 2FA 设置页面显示为"手动输入码"
+      </div>
+      <div class="form-group">
+        <label>账户名称</label>
+        <input type="text" id="inputName" placeholder="例如：GitHub / Google / 张三的邮箱" maxlength="60">
+      </div>
+      <div class="form-group">
+        <label>服务商（选填）</label>
+        <input type="text" id="inputIssuer" placeholder="例如：GitHub" maxlength="40">
+      </div>
+      <div class="form-group">
+        <label>TOTP 密钥（Secret Key）</label>
+        <div class="secret-wrap">
+          <input type="password" id="inputSecret" placeholder="例如：JBSWY3DPEHPK3PXP">
+          <button class="secret-toggle" id="secretToggleBtn" onclick="toggleSecret()">
+            <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <span class="hint">Base32 格式，不区分大小写，空格会自动去除</span>
+      </div>
+      <div class="error-msg" id="modalError"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('editModal')">取消</button>
+      <button class="btn btn-primary" onclick="saveAccount()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+        保存
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal-overlay" id="confirmModal" style="display:none" onclick="onOverlayClick(event,'confirmModal')">
+  <div class="modal confirm-modal">
+    <div class="modal-header">
+      <span class="modal-title">删除账户</span>
+      <button class="modal-close" onclick="closeModal('confirmModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="confirm-msg">确定要删除账户 <span class="confirm-name" id="confirmName"></span> 吗？</p>
+      <p class="confirm-msg" style="font-size:12px;color:var(--danger)">⚠️ 删除后将无法恢复，请确保已备份此账户的恢复码。</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">取消</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        确认删除
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── TOTP Core ──────────────────────────────────────────────────────────────
+
+const BASE32_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+
+function base32Decode(input) {
+  const clean = input.toUpperCase().replace(/[^A-Z2-7]/g, '');
+  let bits = 0, value = 0;
+  const output = new Uint8Array(Math.floor(clean.length * 5 / 8));
+  let idx = 0;
+  for (const ch of clean) {
+    value = (value << 5) | BASE32_CHARS.indexOf(ch);
+    bits += 5;
+    if (bits >= 8) {
+      output[idx++] = (value >>> (bits - 8)) & 0xff;
+      bits -= 8;
+    }
+  }
+  return output;
+}
+
+async function hmacSHA1(keyBytes, data) {
+  const key = await crypto.subtle.importKey(
+    'raw', keyBytes, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, data);
+  return new Uint8Array(sig);
+}
+
+async function generateTOTP(secret, digits = 6, period = 30) {
+  const keyBytes = base32Decode(secret);
+  const counter = Math.floor(Date.now() / 1000 / period);
+  const buf = new ArrayBuffer(8);
+  const view = new DataView(buf);
+  view.setUint32(0, 0, false);
+  view.setUint32(4, counter, false);
+  const hmac = await hmacSHA1(keyBytes, buf);
+  const offset = hmac[19] & 0xf;
+  const code = (
+    ((hmac[offset]     & 0x7f) << 24) |
+    ((hmac[offset + 1] & 0xff) << 16) |
+    ((hmac[offset + 2] & 0xff) <<  8) |
+     (hmac[offset + 3] & 0xff)
+  ) % Math.pow(10, digits);
+  return String(code).padStart(digits, '0');
+}
+
+function getTimeProgress(period = 30) {
+  const rem = period - (Math.floor(Date.now() / 1000) % period);
+  return { remaining: rem, pct: (rem / period) * 100 };
+}
+
+// ─── Storage ─────────────────────────────────────────────────────────────────
+
+const STORAGE_KEY = 'twofa_accounts_v1';
+
+function loadAccounts() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveAccounts(list) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+
+let accounts = loadAccounts();
+
+// ─── UI State ─────────────────────────────────────────────────────────────────
+
+let editingId = null;
+let deletingId = null;
+let searchQuery = '';
+
+const avatarColors = [
+  '#6c63ff','#ff6584','#43d19e','#ffb74d','#4fc3f7',
+  '#f06292','#aed581','#ff8a65','#ba68c8','#4db6ac'
+];
+
+function getColor(name) {
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffffffff;
+  return avatarColors[Math.abs(h) % avatarColors.length];
+}
+
+function getInitials(name) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+// ─── Render ──────────────────────────────────────────────────────────────────
+
+const cardList = document.getElementById('cardList');
+const emptyState = document.getElementById('emptyState');
+
+function renderAll() {
+  const filtered = accounts.filter(a =>
+    a.name.toLowerCase().includes(searchQuery) ||
+    (a.issuer || '').toLowerCase().includes(searchQuery)
+  );
+
+  cardList.innerHTML = '';
+  emptyState.style.display = (accounts.length === 0 || filtered.length === 0) ? 'block' : 'none';
+
+  if (accounts.length > 0 && filtered.length === 0) {
+    emptyState.querySelector('h2').textContent = '未找到匹配账户';
+    emptyState.querySelector('p').textContent = '试试不同的搜索关键词';
+  } else {
+    emptyState.querySelector('h2').textContent = '暂无 2FA 账户';
+    emptyState.querySelector('p').innerHTML = '点击"添加账户"导入你的 TOTP 密钥<br>所有数据仅保存在本地浏览器中';
+  }
+
+  for (const acc of filtered) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.id = acc.id;
+
+    const color = getColor(acc.name);
+    const initials = getInitials(acc.name);
+    const { pct, remaining } = getTimeProgress();
+    const expiring = remaining <= 7;
+
+    card.innerHTML = `
+      <div class="card-avatar" style="background:${color}">${initials}</div>
+      <div class="card-info">
+        <div class="card-name">${escHtml(acc.name)}</div>
+        ${acc.issuer ? `<div class="card-issuer">${escHtml(acc.issuer)}</div>` : ''}
+      </div>
+      <div class="card-code-area">
+        <div class="code-display${expiring?' expiring':''}" data-id="${acc.id}" title="点击复制" onclick="copyCode(this,'${acc.id}')">
+          <span class="code-val">──────</span>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-bar${expiring?' expiring':''}" style="width:${pct}%"></div>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="icon-btn" title="编辑" onclick="openEditModal('${acc.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="icon-btn del" title="删除" onclick="openDeleteModal('${acc.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
+      </div>
+    `;
+    cardList.appendChild(card);
+    refreshCode(acc.id);
+  }
+}
+
+async function refreshCode(id) {
+  const acc = accounts.find(a => a.id === id);
+  if (!acc) return;
+  try {
+    const code = await generateTOTP(acc.secret);
+    const el = document.querySelector(`.code-display[data-id="${id}"] .code-val`);
+    if (el) el.textContent = code.slice(0,3) + ' ' + code.slice(3);
+  } catch {}
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Tick ─────────────────────────────────────────────────────────────────────
+
+let lastStep = -1;
+
+function tick() {
+  const now = Math.floor(Date.now() / 1000);
+  const step = Math.floor(now / 30);
+  const rem = 30 - (now % 30);
+  const pct = (rem / 30) * 100;
+  const expiring = rem <= 7;
+
+  // Update progress bars
+  document.querySelectorAll('.progress-bar').forEach(bar => {
+    bar.style.width = pct + '%';
+    bar.classList.toggle('expiring', expiring);
+  });
+
+  // Update code colors
+  document.querySelectorAll('.code-display').forEach(el => {
+    if (!el.classList.contains('copied')) {
+      el.classList.toggle('expiring', expiring);
+    }
+  });
+
+  // Refresh codes on new step
+  if (step !== lastStep) {
+    lastStep = step;
+    for (const acc of accounts) refreshCode(acc.id);
+  }
+}
+
+setInterval(tick, 500);
+
+// ─── Copy ─────────────────────────────────────────────────────────────────────
+
+async function copyCode(el, id) {
+  const acc = accounts.find(a => a.id === id);
+  if (!acc) return;
+  try {
+    const code = await generateTOTP(acc.secret);
+    await navigator.clipboard.writeText(code);
+    el.classList.add('copied');
+    const valEl = el.querySelector('.code-val');
+    const orig = valEl.textContent;
+    valEl.textContent = '已复制!';
+    showToast('验证码已复制到剪贴板');
+    setTimeout(() => {
+      el.classList.remove('copied');
+      valEl.textContent = orig;
+    }, 1500);
+  } catch {
+    showToast('复制失败，请手动复制');
+  }
+}
+
+// ─── Modal helpers ────────────────────────────────────────────────────────────
+
+function openModal(id) {
+  document.getElementById(id).style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(id) {
+  document.getElementById(id).style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function onOverlayClick(e, id) {
+  if (e.target === e.currentTarget) closeModal(id);
+}
+
+// ─── Add / Edit ──────────────────────────────────────────────────────────────
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = '添加账户';
+  document.getElementById('inputName').value = '';
+  document.getElementById('inputIssuer').value = '';
+  document.getElementById('inputSecret').value = '';
+  document.getElementById('inputSecret').type = 'password';
+  document.getElementById('modalError').style.display = 'none';
+  openModal('editModal');
+  setTimeout(() => document.getElementById('inputName').focus(), 100);
+}
+
+function openEditModal(id) {
+  const acc = accounts.find(a => a.id === id);
+  if (!acc) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = '编辑账户';
+  document.getElementById('inputName').value = acc.name;
+  document.getElementById('inputIssuer').value = acc.issuer || '';
+  document.getElementById('inputSecret').value = acc.secret;
+  document.getElementById('inputSecret').type = 'password';
+  document.getElementById('modalError').style.display = 'none';
+  openModal('editModal');
+  setTimeout(() => document.getElementById('inputName').focus(), 100);
+}
+
+function toggleSecret() {
+  const inp = document.getElementById('inputSecret');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+async function saveAccount() {
+  const name = document.getElementById('inputName').value.trim();
+  const issuer = document.getElementById('inputIssuer').value.trim();
+  const secret = document.getElementById('inputSecret').value.trim().replace(/\s+/g, '').toUpperCase();
+  const errEl = document.getElementById('modalError');
+
+  if (!name) { showError('请输入账户名称'); return; }
+  if (!secret) { showError('请输入 TOTP 密钥'); return; }
+
+  // Validate secret by trying to generate a code
+  try {
+    await generateTOTP(secret);
+  } catch {
+    showError('密钥格式无效，请检查是否为有效的 Base32 字符串');
+    return;
+  }
+
+  errEl.style.display = 'none';
+
+  if (editingId) {
+    const acc = accounts.find(a => a.id === editingId);
+    if (acc) { acc.name = name; acc.issuer = issuer; acc.secret = secret; }
+  } else {
+    accounts.push({ id: crypto.randomUUID(), name, issuer, secret, addedAt: Date.now() });
+  }
+
+  saveAccounts(accounts);
+  closeModal('editModal');
+  renderAll();
+  showToast(editingId ? '账户已更新' : '账户已添加');
+}
+
+function showError(msg) {
+  const el = document.getElementById('modalError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ─── Delete ───────────────────────────────────────────────────────────────────
+
+function openDeleteModal(id) {
+  const acc = accounts.find(a => a.id === id);
+  if (!acc) return;
+  deletingId = id;
+  document.getElementById('confirmName').textContent = `"${acc.name}"`;
+  openModal('confirmModal');
+}
+
+function confirmDelete() {
+  accounts = accounts.filter(a => a.id !== deletingId);
+  saveAccounts(accounts);
+  closeModal('confirmModal');
+  renderAll();
+  showToast('账户已删除');
+  deletingId = null;
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+
+let toastTimer;
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ─── Search ───────────────────────────────────────────────────────────────────
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchQuery = e.target.value.toLowerCase().trim();
+  renderAll();
+});
+
+// ─── Keyboard ─────────────────────────────────────────────────────────────────
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeModal('editModal');
+    closeModal('confirmModal');
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+    e.preventDefault();
+    openAddModal();
+  }
+  if (e.key === 'Enter') {
+    if (document.getElementById('editModal').style.display !== 'none') saveAccount();
+  }
+});
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+
+renderAll();
+</script>
+</body>
+</html>
