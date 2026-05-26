@@ -55,6 +55,12 @@
     gap: 12px;
   }
 
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .logo {
     width: 38px;
     height: 38px;
@@ -80,6 +86,34 @@
     font-size: 14px;
     margin-left: 8px;
   }
+
+  /* Sync dot */
+  .sync-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--text-dim);
+    transition: background 0.3s;
+  }
+  .sync-dot.syncing {
+    background: var(--warn);
+    animation: pulse 1s infinite;
+  }
+  .sync-dot.ok { background: var(--success); }
+  .sync-dot.error { background: var(--danger); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .spinning { animation: spin 0.8s linear infinite; }
 
   /* Main */
   main {
@@ -149,6 +183,7 @@
   }
 
   .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
   .btn-ghost {
     background: transparent;
@@ -172,6 +207,19 @@
     background: var(--danger);
     color: #fff;
   }
+
+  .btn-link {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 8px;
+    text-decoration: underline;
+    transition: color 0.2s;
+  }
+
+  .btn-link:hover { color: var(--text); }
 
   /* Cards */
   .cards {
@@ -356,6 +404,8 @@
     overflow: hidden;
   }
 
+  .modal.modal-wide { max-width: 520px; }
+
   @keyframes modalIn {
     from { opacity: 0; transform: scale(0.95) translateY(-10px); }
     to { opacity: 1; transform: scale(1) translateY(0); }
@@ -397,6 +447,8 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    max-height: 70vh;
+    overflow-y: auto;
   }
 
   .form-group {
@@ -452,6 +504,16 @@
     background: var(--danger-light);
     color: var(--danger);
     border: 1px solid rgba(255,92,108,0.3);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 13px;
+    display: none;
+  }
+
+  .success-msg {
+    background: rgba(76,175,136,0.12);
+    color: var(--success);
+    border: 1px solid rgba(76,175,136,0.3);
     border-radius: var(--radius-sm);
     padding: 10px 14px;
     font-size: 13px;
@@ -534,14 +596,144 @@
     width: 100%;
     justify-content: space-between;
   }
+
+  /* Links */
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  a:hover { text-decoration: underline; }
+
+  /* Section label */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+
+  /* Settings modal section divider */
+  .modal-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Gist ID display */
+  .gist-id-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    color: var(--text-muted);
+    word-break: break-all;
+  }
+
+  /* Input with button inline */
+  .input-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .input-row input { flex: 1; }
+
+  /* Unlock screen */
+  .unlock-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .unlock-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 36px 32px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: modalIn 0.3s ease;
+  }
+
+  .unlock-icon {
+    font-size: 40px;
+    margin-bottom: 4px;
+  }
+
+  .unlock-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .unlock-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-top: -6px;
+  }
+
+  .unlock-error {
+    background: var(--danger-light);
+    color: var(--danger);
+    border: 1px solid rgba(255,92,108,0.3);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 13px;
+    display: none;
+    text-align: left;
+  }
 </style>
 </head>
 <body>
 
+<!-- Unlock Screen -->
+<div class="unlock-screen" id="unlockScreen" style="display:none">
+  <div class="unlock-card">
+    <div class="unlock-icon">🔐</div>
+    <div class="unlock-title">云端同步已启用</div>
+    <div class="unlock-subtitle">输入加密密码以解锁并同步最新数据</div>
+    <input type="password" id="unlockPassword" placeholder="加密密码" autofocus>
+    <div class="unlock-error" id="unlockError"></div>
+    <button class="btn btn-primary" id="unlockBtn" onclick="doUnlock()" style="width:100%;justify-content:center">
+      解锁
+    </button>
+    <button class="btn-link" onclick="skipUnlock()">跳过，使用本地缓存</button>
+  </div>
+</div>
+
 <header>
   <div class="header-left">
     <div class="logo">🔐</div>
-    <h1>2FA 验证工具 <span>本地私人存储</span></h1>
+    <h1>2FA 验证工具 <span id="headerSubtitle">本地私人存储</span></h1>
+  </div>
+  <div class="header-right">
+    <div class="sync-dot" id="syncDot" title="同步状态"></div>
+    <button class="icon-btn" id="syncBtn" title="立即同步" onclick="manualSync()" style="display:none">
+      <svg id="syncIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    </button>
+    <button class="icon-btn" title="设置" onclick="openSettingsModal()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
   </div>
 </header>
 
@@ -628,6 +820,85 @@
   </div>
 </div>
 
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal" style="display:none" onclick="onOverlayClick(event,'settingsModal')">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span class="modal-title">⚙️ 设置</span>
+      <button class="modal-close" onclick="closeModal('settingsModal')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Sync Section -->
+      <div class="modal-section">
+        <div class="section-label">GitHub Gist 云端同步</div>
+
+        <div class="form-group">
+          <label>GitHub Personal Access Token</label>
+          <div class="secret-wrap">
+            <input type="password" id="settingsToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+            <button class="secret-toggle" onclick="toggleFieldVisibility('settingsToken')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <span class="hint">需要 <code>gist</code> 权限。<a href="https://github.com/settings/tokens/new?scopes=gist" target="_blank">创建 Token →</a></span>
+        </div>
+
+        <div class="form-group" id="existingGistSection" style="display:none">
+          <label>当前 Gist ID</label>
+          <div class="gist-id-display" id="currentGistIdDisplay"></div>
+          <span class="hint">数据加密存储在此 Gist 中</span>
+        </div>
+
+        <div class="form-group" id="newGistIdGroup">
+          <label>已有 Gist ID（留空则自动创建）</label>
+          <input type="text" id="settingsGistId" placeholder="可选：粘贴已有的 Gist ID">
+        </div>
+
+        <div class="form-group">
+          <label>加密密码</label>
+          <input type="password" id="settingsPassword" placeholder="设置一个强密码（不会上传）">
+        </div>
+        <div class="form-group" id="confirmPasswordGroup">
+          <label>确认密码</label>
+          <input type="password" id="settingsPasswordConfirm" placeholder="再次输入密码">
+        </div>
+
+        <div class="error-msg" id="settingsError"></div>
+        <div class="success-msg" id="settingsSuccess"></div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="settingsSaveBtn" onclick="saveSettings()" style="flex:1;justify-content:center">
+            保存并连接
+          </button>
+          <button class="btn btn-danger" id="disconnectBtn" onclick="disconnectSync()" style="display:none">
+            断开同步
+          </button>
+        </div>
+      </div>
+
+      <!-- Backup Section -->
+      <div class="modal-section" style="margin-top:8px">
+        <div class="section-label">数据备份</div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-ghost" onclick="exportBackup()" style="flex:1;justify-content:center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            导出备份
+          </button>
+          <label class="btn btn-ghost" style="flex:1;justify-content:center;cursor:pointer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            导入备份
+            <input type="file" accept=".json" style="display:none" onchange="importBackup(event)">
+          </label>
+        </div>
+        <span class="hint" style="color:var(--warn)">⚠️ 导出的备份文件为明文 JSON，请妥善保管。</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -683,20 +954,459 @@ function getTimeProgress(period = 30) {
   return { remaining: rem, pct: (rem / period) * 100 };
 }
 
+// ─── Crypto Helpers ──────────────────────────────────────────────────────────
+
+function base64Encode(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+}
+
+function base64Decode(str) {
+  return Uint8Array.from(atob(str), c => c.charCodeAt(0));
+}
+
+async function deriveKey(password, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: salt, iterations: 200000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptWithKey(obj, key) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const enc = new TextEncoder();
+  const plaintext = enc.encode(JSON.stringify(obj));
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext);
+  const combined = new Uint8Array(iv.byteLength + ciphertext.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(ciphertext), iv.byteLength);
+  return base64Encode(combined);
+}
+
+async function decryptWithKey(b64, key) {
+  const combined = base64Decode(b64);
+  const iv = combined.slice(0, 12);
+  const ciphertext = combined.slice(12);
+  const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+  return JSON.parse(new TextDecoder().decode(plaintext));
+}
+
+// ─── Gist API ─────────────────────────────────────────────────────────────────
+
+const GIST_FILENAME = '2fa_sync.enc';
+
+async function gistFetch(id, token) {
+  const resp = await fetch(`https://api.github.com/gists/${id}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+  });
+  if (!resp.ok) throw new Error(`Gist fetch failed: ${resp.status}`);
+  const data = await resp.json();
+  return data.files[GIST_FILENAME]?.content || null;
+}
+
+async function gistPush(id, content, token) {
+  const resp = await fetch(`https://api.github.com/gists/${id}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ files: { [GIST_FILENAME]: { content } } })
+  });
+  if (!resp.ok) throw new Error(`Gist push failed: ${resp.status}`);
+}
+
+async function gistCreate(content, token) {
+  const resp = await fetch('https://api.github.com/gists', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      description: '2FA encrypted sync',
+      public: false,
+      files: { [GIST_FILENAME]: { content } }
+    })
+  });
+  if (!resp.ok) throw new Error(`Gist create failed: ${resp.status}`);
+  const data = await resp.json();
+  return data.id;
+}
+
+async function validateToken(token) {
+  const resp = await fetch('https://api.github.com/gists?per_page=1', {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+  });
+  if (!resp.ok) throw new Error('Token 验证失败，请检查是否有效且具有 gist 权限');
+}
+
+// ─── Sync content format helpers ─────────────────────────────────────────────
+
+function buildGistContent(saltBase64, encryptedBase64) {
+  return `v1:${saltBase64}:${encryptedBase64}`;
+}
+
+function parseGistContent(content) {
+  if (!content || !content.startsWith('v1:')) throw new Error('无效的同步数据格式');
+  const parts = content.split(':');
+  if (parts.length < 3) throw new Error('无效的同步数据格式');
+  return { salt: parts[1], encrypted: parts.slice(2).join(':') };
+}
+
 // ─── Storage ─────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'twofa_accounts_v1';
+const SYNC_CONFIG_KEY = 'twofa_sync_v1';
 
 function loadAccounts() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
   catch { return []; }
 }
 
-function saveAccounts(list) {
+function saveAccountsLocal(list) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
 }
 
+async function saveAccounts(list) {
+  saveAccountsLocal(list);
+  await syncUp();
+}
+
+function loadSyncConfig() {
+  try { return JSON.parse(localStorage.getItem(SYNC_CONFIG_KEY)) || null; }
+  catch { return null; }
+}
+
+function saveSyncConfig(cfg) {
+  localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(cfg));
+}
+
+function clearSyncConfig() {
+  localStorage.removeItem(SYNC_CONFIG_KEY);
+}
+
 let accounts = loadAccounts();
+let syncConfig = loadSyncConfig(); // { token, gistId, salt }
+let sessionKey = null; // CryptoKey, never persisted
+
+// ─── Sync ─────────────────────────────────────────────────────────────────────
+
+function setSyncDot(state) {
+  const dot = document.getElementById('syncDot');
+  dot.className = 'sync-dot' + (state ? ' ' + state : '');
+}
+
+function setSyncSpinner(spinning) {
+  const icon = document.getElementById('syncIcon');
+  if (spinning) {
+    icon.classList.add('spinning');
+  } else {
+    icon.classList.remove('spinning');
+  }
+}
+
+async function syncUp() {
+  if (!sessionKey || !syncConfig) return;
+  setSyncDot('syncing');
+  setSyncSpinner(true);
+  try {
+    const saltBytes = base64Decode(syncConfig.salt);
+    const encrypted = await encryptWithKey(accounts, sessionKey);
+    const content = buildGistContent(syncConfig.salt, encrypted);
+    await gistPush(syncConfig.gistId, content, syncConfig.token);
+    setSyncDot('ok');
+  } catch (e) {
+    console.error('syncUp failed', e);
+    setSyncDot('error');
+    showToast('同步失败: ' + e.message);
+  } finally {
+    setSyncSpinner(false);
+  }
+}
+
+async function manualSync() {
+  if (!sessionKey || !syncConfig) return;
+  setSyncDot('syncing');
+  setSyncSpinner(true);
+  try {
+    const content = await gistFetch(syncConfig.gistId, syncConfig.token);
+    if (content) {
+      const { salt, encrypted } = parseGistContent(content);
+      const remote = await decryptWithKey(encrypted, sessionKey);
+      mergeAccounts(remote);
+      saveAccountsLocal(accounts);
+      renderAll();
+      showToast('同步成功');
+    }
+    setSyncDot('ok');
+  } catch (e) {
+    console.error('manualSync failed', e);
+    setSyncDot('error');
+    showToast('同步失败: ' + e.message);
+  } finally {
+    setSyncSpinner(false);
+  }
+}
+
+function mergeAccounts(remote) {
+  const localMap = new Map(accounts.map(a => [a.id, a]));
+  for (const ra of remote) {
+    if (!localMap.has(ra.id)) {
+      accounts.push(ra);
+    }
+  }
+}
+
+function updateSyncUI() {
+  const hasSyncConfig = !!syncConfig;
+  const hasSession = !!sessionKey;
+  document.getElementById('syncBtn').style.display = (hasSyncConfig && hasSession) ? 'flex' : 'none';
+  document.getElementById('headerSubtitle').textContent = (hasSyncConfig && hasSession) ? '云端加密同步' : '本地私人存储';
+  setSyncDot(hasSyncConfig && hasSession ? 'ok' : '');
+}
+
+// ─── Unlock screen ────────────────────────────────────────────────────────────
+
+async function doUnlock() {
+  const password = document.getElementById('unlockPassword').value;
+  if (!password) {
+    showUnlockError('请输入密码');
+    return;
+  }
+
+  const btn = document.getElementById('unlockBtn');
+  btn.disabled = true;
+  btn.textContent = '正在验证…';
+  document.getElementById('unlockError').style.display = 'none';
+
+  try {
+    const saltBytes = base64Decode(syncConfig.salt);
+    const key = await deriveKey(password, saltBytes);
+
+    // Fetch and decrypt to verify
+    const content = await gistFetch(syncConfig.gistId, syncConfig.token);
+    if (content) {
+      const { encrypted } = parseGistContent(content);
+      const remote = await decryptWithKey(encrypted, key);
+      mergeAccounts(remote);
+      saveAccountsLocal(accounts);
+    }
+
+    sessionKey = key;
+    hideUnlockScreen();
+    updateSyncUI();
+    renderAll();
+    showToast('已解锁并同步');
+  } catch (e) {
+    console.error('unlock failed', e);
+    if (e.name === 'OperationError') {
+      showUnlockError('密码错误，请重试');
+    } else {
+      showUnlockError('解锁失败: ' + e.message);
+    }
+    btn.disabled = false;
+    btn.textContent = '解锁';
+  }
+}
+
+function skipUnlock() {
+  hideUnlockScreen();
+  renderAll();
+  showToast('使用本地缓存数据');
+}
+
+function showUnlockError(msg) {
+  const el = document.getElementById('unlockError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideUnlockScreen() {
+  document.getElementById('unlockScreen').style.display = 'none';
+}
+
+document.getElementById('unlockPassword').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doUnlock();
+});
+
+// ─── Settings Modal ───────────────────────────────────────────────────────────
+
+function openSettingsModal() {
+  const cfg = syncConfig;
+
+  // Populate existing config if present
+  if (cfg) {
+    document.getElementById('settingsToken').value = cfg.token || '';
+    document.getElementById('existingGistSection').style.display = 'block';
+    document.getElementById('currentGistIdDisplay').textContent = cfg.gistId;
+    document.getElementById('newGistIdGroup').style.display = 'none';
+    document.getElementById('confirmPasswordGroup').style.display = 'none';
+    document.getElementById('disconnectBtn').style.display = 'flex';
+    document.getElementById('settingsSaveBtn').textContent = '重新连接';
+  } else {
+    document.getElementById('settingsToken').value = '';
+    document.getElementById('existingGistSection').style.display = 'none';
+    document.getElementById('newGistIdGroup').style.display = 'block';
+    document.getElementById('confirmPasswordGroup').style.display = 'flex';
+    document.getElementById('disconnectBtn').style.display = 'none';
+    document.getElementById('settingsSaveBtn').textContent = '保存并连接';
+    document.getElementById('settingsGistId').value = '';
+  }
+
+  document.getElementById('settingsPassword').value = '';
+  document.getElementById('settingsPasswordConfirm').value = '';
+  document.getElementById('settingsError').style.display = 'none';
+  document.getElementById('settingsSuccess').style.display = 'none';
+  openModal('settingsModal');
+}
+
+async function saveSettings() {
+  const token = document.getElementById('settingsToken').value.trim();
+  const gistIdInput = document.getElementById('settingsGistId').value.trim();
+  const password = document.getElementById('settingsPassword').value;
+  const passwordConfirm = document.getElementById('settingsPasswordConfirm').value;
+
+  const errEl = document.getElementById('settingsError');
+  const successEl = document.getElementById('settingsSuccess');
+  errEl.style.display = 'none';
+  successEl.style.display = 'none';
+
+  if (!token) { showSettingsError('请输入 GitHub Token'); return; }
+  if (!password) { showSettingsError('请输入加密密码'); return; }
+
+  // Only require confirm password when creating new (no existing config)
+  if (!syncConfig && password !== passwordConfirm) {
+    showSettingsError('两次密码不一致');
+    return;
+  }
+
+  const btn = document.getElementById('settingsSaveBtn');
+  btn.disabled = true;
+  btn.textContent = '连接中…';
+
+  try {
+    await validateToken(token);
+
+    if (gistIdInput || syncConfig) {
+      // Connecting to existing gist
+      const existingGistId = gistIdInput || syncConfig.gistId;
+      const content = await gistFetch(existingGistId, token);
+      if (!content) throw new Error('Gist 内容为空或格式不正确');
+      const { salt: saltBase64, encrypted } = parseGistContent(content);
+      const saltBytes = base64Decode(saltBase64);
+      const key = await deriveKey(password, saltBytes);
+      const remote = await decryptWithKey(encrypted, key); // throws OperationError if wrong password
+
+      const newConfig = { token, gistId: existingGistId, salt: saltBase64 };
+      saveSyncConfig(newConfig);
+      syncConfig = newConfig;
+      sessionKey = key;
+
+      mergeAccounts(remote);
+      saveAccountsLocal(accounts);
+    } else {
+      // Creating new gist
+      const saltBytes = crypto.getRandomValues(new Uint8Array(32));
+      const saltBase64 = base64Encode(saltBytes);
+      const key = await deriveKey(password, saltBytes);
+      const encrypted = await encryptWithKey(accounts, key);
+      const content = buildGistContent(saltBase64, encrypted);
+      const newGistId = await gistCreate(content, token);
+
+      const newConfig = { token, gistId: newGistId, salt: saltBase64 };
+      saveSyncConfig(newConfig);
+      syncConfig = newConfig;
+      sessionKey = key;
+    }
+
+    updateSyncUI();
+    renderAll();
+
+    successEl.textContent = `同步已启用！Gist ID: ${syncConfig.gistId}`;
+    successEl.style.display = 'block';
+    document.getElementById('existingGistSection').style.display = 'block';
+    document.getElementById('currentGistIdDisplay').textContent = syncConfig.gistId;
+    document.getElementById('newGistIdGroup').style.display = 'none';
+    document.getElementById('confirmPasswordGroup').style.display = 'none';
+    document.getElementById('disconnectBtn').style.display = 'flex';
+    btn.textContent = '重新连接';
+
+    showToast('云端同步已启用');
+  } catch (e) {
+    console.error('saveSettings failed', e);
+    if (e.name === 'OperationError') {
+      showSettingsError('密码错误，无法解密 Gist 数据');
+    } else {
+      showSettingsError(e.message);
+    }
+    btn.textContent = syncConfig ? '重新连接' : '保存并连接';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function showSettingsError(msg) {
+  const el = document.getElementById('settingsError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function disconnectSync() {
+  if (!confirm('确定要断开云端同步吗？本地数据不会删除。')) return;
+  clearSyncConfig();
+  syncConfig = null;
+  sessionKey = null;
+  updateSyncUI();
+  closeModal('settingsModal');
+  showToast('已断开同步');
+}
+
+// ─── Backup ───────────────────────────────────────────────────────────────────
+
+function exportBackup() {
+  const data = JSON.stringify(accounts, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '2fa_backup.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('备份已导出');
+}
+
+async function importBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const imported = JSON.parse(text);
+    if (!Array.isArray(imported)) throw new Error('格式无效');
+    let added = 0;
+    const existingIds = new Set(accounts.map(a => a.id));
+    for (const item of imported) {
+      if (item.id && item.name && item.secret && !existingIds.has(item.id)) {
+        accounts.push(item);
+        added++;
+      }
+    }
+    await saveAccounts(accounts);
+    renderAll();
+    showToast(`已导入 ${added} 个账户`);
+    event.target.value = '';
+  } catch (e) {
+    showToast('导入失败: ' + e.message);
+  }
+}
 
 // ─── UI State ─────────────────────────────────────────────────────────────────
 
@@ -806,20 +1516,17 @@ function tick() {
   const pct = (rem / 30) * 100;
   const expiring = rem <= 7;
 
-  // Update progress bars
   document.querySelectorAll('.progress-bar').forEach(bar => {
     bar.style.width = pct + '%';
     bar.classList.toggle('expiring', expiring);
   });
 
-  // Update code colors
   document.querySelectorAll('.code-display').forEach(el => {
     if (!el.classList.contains('copied')) {
       el.classList.toggle('expiring', expiring);
     }
   });
 
-  // Refresh codes on new step
   if (step !== lastStep) {
     lastStep = step;
     for (const acc of accounts) refreshCode(acc.id);
@@ -899,6 +1606,11 @@ function toggleSecret() {
   inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
+function toggleFieldVisibility(fieldId) {
+  const inp = document.getElementById(fieldId);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
 async function saveAccount() {
   const name = document.getElementById('inputName').value.trim();
   const issuer = document.getElementById('inputIssuer').value.trim();
@@ -908,7 +1620,6 @@ async function saveAccount() {
   if (!name) { showError('请输入账户名称'); return; }
   if (!secret) { showError('请输入 TOTP 密钥'); return; }
 
-  // Validate secret by trying to generate a code
   try {
     await generateTOTP(secret);
   } catch {
@@ -925,7 +1636,7 @@ async function saveAccount() {
     accounts.push({ id: crypto.randomUUID(), name, issuer, secret, addedAt: Date.now() });
   }
 
-  saveAccounts(accounts);
+  await saveAccounts(accounts);
   closeModal('editModal');
   renderAll();
   showToast(editingId ? '账户已更新' : '账户已添加');
@@ -947,9 +1658,9 @@ function openDeleteModal(id) {
   openModal('confirmModal');
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   accounts = accounts.filter(a => a.id !== deletingId);
-  saveAccounts(accounts);
+  await saveAccounts(accounts);
   closeModal('confirmModal');
   renderAll();
   showToast('账户已删除');
@@ -981,6 +1692,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeModal('editModal');
     closeModal('confirmModal');
+    closeModal('settingsModal');
   }
   if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
     e.preventDefault();
@@ -993,7 +1705,16 @@ document.addEventListener('keydown', e => {
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
-renderAll();
+(async () => {
+  updateSyncUI();
+  if (syncConfig) {
+    // Show unlock screen
+    document.getElementById('unlockScreen').style.display = 'flex';
+    setTimeout(() => document.getElementById('unlockPassword').focus(), 100);
+  } else {
+    renderAll();
+  }
+})();
 </script>
 </body>
 </html>
