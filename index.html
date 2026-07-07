@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1117">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔐</text></svg>">
 <title>私人 2FA 验证工具</title>
 <style>
   :root {
@@ -28,11 +30,22 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: var(--bg);
+    background:
+      radial-gradient(760px 420px at 15% -10%, rgba(108, 99, 255, 0.10), transparent 60%),
+      radial-gradient(600px 360px at 100% 0%, rgba(167, 139, 250, 0.06), transparent 55%),
+      var(--bg);
+    background-attachment: fixed;
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     min-height: 100vh;
     padding: 0 0 60px;
+  }
+
+  ::selection { background: var(--accent); color: #fff; }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
   /* Header */
@@ -71,6 +84,7 @@
     justify-content: center;
     font-size: 18px;
     flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(108, 99, 255, 0.45);
   }
 
   h1 {
@@ -126,7 +140,14 @@
   .toolbar {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 14px;
+  }
+
+  .account-count {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    padding-left: 2px;
   }
 
   .search-wrap {
@@ -236,8 +257,9 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    transition: all 0.2s;
+    transition: transform 0.2s, border-color 0.2s, background 0.2s, box-shadow 0.2s;
     animation: fadeIn 0.3s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
   }
 
   @keyframes fadeIn {
@@ -245,7 +267,12 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  .card:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+  .card:hover {
+    border-color: var(--accent);
+    background: var(--bg-card-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.28);
+  }
 
   .card-avatar {
     width: 44px;
@@ -259,6 +286,7 @@
     flex-shrink: 0;
     color: #fff;
     letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
   }
 
   .card-info {
@@ -581,20 +609,20 @@
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
   @media (max-width: 480px) {
-    .card-code-area { display: none; }
-    .code-display-mobile { display: flex !important; }
+    .card { flex-wrap: wrap; padding: 14px 16px; }
+    .card-code-area {
+      width: 100%;
+      flex-direction: row-reverse;
+      align-items: center;
+      justify-content: space-between;
+      order: 3;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .progress-wrap { width: 60px; }
+    .code-display { font-size: 24px; letter-spacing: 3px; }
     h1 span { display: none; }
-  }
-
-  .code-display-mobile {
-    display: none;
-    align-items: center;
-    gap: 10px;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border);
-    width: 100%;
-    justify-content: space-between;
   }
 
   /* Links */
@@ -749,6 +777,8 @@
     </button>
   </div>
 
+  <div class="account-count" id="accountCount"></div>
+
   <div class="cards" id="cardList"></div>
   <div class="empty" id="emptyState" style="display:none">
     <div class="empty-icon">🔑</div>
@@ -785,7 +815,7 @@
             <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
-        <span class="hint">Base32 格式，不区分大小写，空格会自动去除</span>
+        <span class="hint">Base32 格式，不区分大小写，空格会自动去除；也可直接粘贴 otpauth:// 链接自动填充</span>
       </div>
       <div class="error-msg" id="modalError"></div>
     </div>
@@ -952,6 +982,26 @@ async function generateTOTP(secret, digits = 6, period = 30) {
 function getTimeProgress(period = 30) {
   const rem = period - (Math.floor(Date.now() / 1000) % period);
   return { remaining: rem, pct: (rem / period) * 100 };
+}
+
+function parseOtpauthUri(uri) {
+  try {
+    const url = new URL(uri);
+    if (url.protocol !== 'otpauth:' || url.host !== 'totp') return null;
+    const secret = url.searchParams.get('secret');
+    if (!secret) return null;
+    const label = decodeURIComponent(url.pathname.replace(/^\//, ''));
+    let issuer = url.searchParams.get('issuer') || '';
+    let name = label;
+    const sep = label.indexOf(':');
+    if (sep !== -1) {
+      if (!issuer) issuer = label.slice(0, sep);
+      name = label.slice(sep + 1);
+    }
+    return { name: name.trim() || issuer.trim(), issuer: issuer.trim(), secret: secret.trim().toUpperCase() };
+  } catch {
+    return null;
+  }
 }
 
 // ─── Crypto Helpers ──────────────────────────────────────────────────────────
@@ -1205,6 +1255,7 @@ async function doUnlock() {
     hideUnlockScreen();
     updateSyncUI();
     renderAll();
+    resetIdleTimer();
     showToast('已解锁并同步');
   } catch (e) {
     console.error('unlock failed', e);
@@ -1330,6 +1381,7 @@ async function saveSettings() {
 
     updateSyncUI();
     renderAll();
+    resetIdleTimer();
 
     successEl.textContent = `同步已启用！Gist ID: ${syncConfig.gistId}`;
     successEl.style.display = 'block';
@@ -1437,13 +1489,20 @@ const cardList = document.getElementById('cardList');
 const emptyState = document.getElementById('emptyState');
 
 function renderAll() {
-  const filtered = accounts.filter(a =>
-    a.name.toLowerCase().includes(searchQuery) ||
-    (a.issuer || '').toLowerCase().includes(searchQuery)
-  );
+  const filtered = accounts
+    .filter(a =>
+      a.name.toLowerCase().includes(searchQuery) ||
+      (a.issuer || '').toLowerCase().includes(searchQuery)
+    )
+    .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN'));
 
   cardList.innerHTML = '';
   emptyState.style.display = (accounts.length === 0 || filtered.length === 0) ? 'block' : 'none';
+
+  const countEl = document.getElementById('accountCount');
+  countEl.textContent = accounts.length
+    ? `共 ${accounts.length} 个账户${filtered.length !== accounts.length ? `，匹配 ${filtered.length} 个` : ''}`
+    : '';
 
   if (accounts.length > 0 && filtered.length === 0) {
     emptyState.querySelector('h2').textContent = '未找到匹配账户';
@@ -1606,6 +1665,19 @@ function toggleSecret() {
   inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
+document.getElementById('inputSecret').addEventListener('input', e => {
+  const val = e.target.value.trim();
+  if (!val.toLowerCase().startsWith('otpauth://')) return;
+  const parsed = parseOtpauthUri(val);
+  if (!parsed) return;
+  e.target.value = parsed.secret;
+  const nameEl = document.getElementById('inputName');
+  const issuerEl = document.getElementById('inputIssuer');
+  if (!nameEl.value.trim() && parsed.name) nameEl.value = parsed.name;
+  if (!issuerEl.value.trim() && parsed.issuer) issuerEl.value = parsed.issuer;
+  showToast('已从 otpauth 链接自动填充');
+});
+
 function toggleFieldVisibility(fieldId) {
   const inp = document.getElementById(fieldId);
   inp.type = inp.type === 'password' ? 'text' : 'password';
@@ -1701,7 +1773,36 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
     if (document.getElementById('editModal').style.display !== 'none') saveAccount();
   }
+  if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+    e.preventDefault();
+    document.getElementById('searchInput').focus();
+  }
 });
+
+// ─── Auto-lock ────────────────────────────────────────────────────────────────
+
+const IDLE_LOCK_MS = 10 * 60 * 1000;
+let idleTimer;
+
+function resetIdleTimer() {
+  if (!sessionKey) return;
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(lockApp, IDLE_LOCK_MS);
+}
+
+function lockApp() {
+  if (!sessionKey) return;
+  sessionKey = null;
+  updateSyncUI();
+  document.getElementById('unlockPassword').value = '';
+  document.getElementById('unlockScreen').style.display = 'flex';
+  setTimeout(() => document.getElementById('unlockPassword').focus(), 100);
+  showToast('长时间无操作，已自动锁定');
+}
+
+['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(evt =>
+  document.addEventListener(evt, resetIdleTimer, { passive: true })
+);
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 
